@@ -1,48 +1,45 @@
 #!/bin/bash
-#Autor Juri Kononov, rühm A21
-#Apache2 kodutöö, loob saiti ja kausta /var/www sse
+#Autor Juri Kononov
+#Apache2 создание сайта в дериктории /var/www
 export LC_ALL=C
-#kas kasutaja on root õigustes?
+#Пользователь имеет права root?
 if [ $UID -ne 0 ]
 then
-    echo "Kasutajal pole õigusi skripti käivitamiseks, logi juurkasutajaga"
+    echo "У этого пользователя нету прав для запуска скрипта. Зайдите под пользователем root"
     exit 1
 fi
 
-#parameetrite kontroll
+#проверка вводимых параметров
 SITE=$1
 if [ $# -ne 1 ]
 then
-   echo "Skripti parameetrid on valed. Käivita Sktript Järgnevalt: ./apache.sh www.mingisait.ee"
+   echo "Параметры запуска не правельные. Запустите скрипт по примеру: ./apache.sh www.mingisait.ee"
    exit 1
 fi
-    echo "Loon veebilehe nimega $SITE !"
+    echo "Создаем сайт с именем $SITE !"
 
-#kontrollin, las Apache2 on paigaldatud süsteemis või mitte
+#проверяем установлен ли апач на сервере
 dpkg -s apache2 | grep "Status: install ok installed"
 if [ $? -eq 0 ]
 then 
-    echo "Apache2 on instaleeritud"
+    echo "Apache2 уже установлен"
 else
-    echo "Apache2 ei ole instaleeritud"
-    apt-get update && apt-get install apache2
+    echo "Apache2 еще не установлен"
+    apt-get update && apt-get install apache2 #Устанавливаем апач
 fi
 
-#kirjutame faili hosts anmed ja loome saiti jaoks kausta
+#создаем запись в файле хостс и создаем каталог для файлов сайта
 echo "127.0.0.1 $SITE" >> /etc/hosts
 mkdir -p /var/www/$SITE
 
-#kirjutame Apache Konf faili andmeid
+#создаем и описываем конфигурационный файл апача
 cp /etc/apache2/sites-available/default /etc/apache2/sites-available/$SITE
-#sed -i 's/ServerAdmin webmaster@localhost/ServerAdmin webmaster@'$SITE'\n\tServerName' $SITE'/' /etc/apache2/sites-available/$SITE     //ei toiminud
-#sed -i 's@DocumentRoot /var/www@DocumentRoot /var/www/'$SITE'@' /etc/apache2/sites-available/$SITE                                     //ei toiminud
-
-sed -i 's/ServerAdmin webmaster@localhost/ServerAdmin webmaster@'$SITE'\n\tServerName '$SITE'/' /etc/apache2/sites-available/$SITE
+sed -i 's/ServerAdmin webmaster@localhost/ServerAdmin webmaster@'$SITE'\n\tServerName '$SITE'/' /etc/apache2/sites-available/$SITE #ищем нужные строчки и подставляем значения
 sed -i 's@DocumentRoot /var/www@DocumentRoot /var/www/'$SITE'@' /etc/apache2/sites-available/$SITE
 
-#kopeerin vaikimisi faili site kaustasse
+#копируем стандатный файл страници в каталог сайта
 cp /var/www/index.html /var/www/$SITE/
 
-#"käivitame" antud veebisaiti ja taaskäivitame demonit
+#"запускаем сайт и перезапускаем сервис апач"
 a2ensite $SITE
 service apache2 restart
